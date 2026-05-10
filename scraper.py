@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PTT 八卦版熱門文章抓取器。"""
+"""PTT 八卦版熱門文章抓取器：過去 N 小時、推文數 ≥ X 的文章。"""
 
 import re
 import time
@@ -13,15 +13,17 @@ BOARD_URL = f"{PTT_BASE}/bbs/Gossiping/index.html"
 COOKIES = {"over18": "1"}
 
 MIN_PUSH = 20
-PAGES_TO_SCAN = 10
+LOOKBACK_HOURS = 24
+PAGES_TO_SCAN = 50
 CONTENT_MAX_CHARS = 2000
 TOP_PUSHES = 10
 REQUEST_INTERVAL = 0.4
 MAX_RETRIES = 3
+TZ = timezone(timedelta(hours=8))
 
 
 def fetch(url: str):
-    """偽裝成 Chrome 取得網頁，含重試。"""
+    """偽裝 Chrome 抓取，含重試。"""
     last_err = None
     for attempt in range(MAX_RETRIES):
         try:
@@ -42,7 +44,6 @@ def fetch(url: str):
 
 
 def parse_push_count(text: str) -> int:
-    """把推文數欄位文字（如 5、爆、X1）轉成整數。"""
     text = (text or "").strip()
     if not text:
         return 0
@@ -59,6 +60,15 @@ def parse_push_count(text: str) -> int:
     return 0
 
 
+def parse_post_time(value: str):
+    """PTT 時間字串 'Sat May 10 14:23:45 2026' → 帶時區 datetime。"""
+    try:
+        dt = datetime.strptime(value.strip(), "%a %b %d %H:%M:%S %Y")
+        return dt.replace(tzinfo=TZ)
+    except (ValueError, AttributeError):
+        return None
+
+
 def get_article_list(url: str):
     r = fetch(url)
     soup = BeautifulSoup(r.text, "html.parser")
@@ -67,7 +77,7 @@ def get_article_list(url: str):
     for ent in soup.select("div.r-ent"):
         title_a = ent.select_one("div.title a")
         if not title_a:
-            continue  # 已刪除
+            continue
 
         nrec_span = ent.select_one("div.nrec span")
         nrec_text = nrec_span.text if nrec_span else ""
@@ -95,7 +105,15 @@ def get_article_content(url: str):
     soup = BeautifulSoup(r.text, "html.parser")
     main = soup.select_one("#main-content")
     if not main:
-        return None, []
+        return None, [], None
+
+    post_time = None
+    for metaline in main.select("div.article-metaline"):
+        tag = metaline.select_one("span.article-meta-tag")
+        value = metaline.select_one("span.article-meta-value")
+        if tag and value and tag.text.strip() == "時間":
+            post_time = parse_post_time(value.text)
+            break
 
     pushes = []
     for p in main.select("div.push"):
@@ -118,70 +136,85 @@ def get_article_content(url: str):
     text = re.split(r"※ 發信站", text)[0].strip()
     text = re.sub(r"\n{3,}", "\n\n", text)
 
-    return text, pushes
+    return text, pushes, post_time
 
 
 def main():
-    tz = timezone(timedelta(hours=8))
-    now = datetime.now(tz).strftime("%Y-%m-%d %H:%M (UTC+8)")
-    print(f"[{now}] 開始抓取...")
+    now = datetime.now(TZ)
+    cutoff = now - timedelta(hours=LOOKBACK_HOURS)
+    now_str = now.strftime("%Y-%m-%d %H:%M (UTC+8)")
+    cutoff_str = cutoff.strftime("%Y-%m-%d %H:%M (UTC+8)")
+    print(f"[{now_str}] 開始抓取")
+    print(f"  條件：發文時間 ≥ {cutoff_str} 且 推文數 ≥ {MIN_PUSH}")
 
-    hot = []
+    # Step 1: 掃描索引頁，收集推文數達標的候選
+    candidates = []
     url = BOARD_URL
     pages = 0
     while pages < PAGES_TO_SCAN and url:
         articles, prev_link = get_article_list(url)
         for a in articles:
             if a["push"] >= MIN_PUSH:
-                hot.append(a)
+                candidates.append(a)
         pages += 1
         url = prev_link
         time.sleep(REQUEST_INTERVAL)
 
-    # 去重（多頁可能重複）
+    # 去重
     seen = set()
     deduped = []
-    for a in hot:
+    for a in candidates:
         if a["url"] in seen:
             continue
         seen.add(a["url"])
         deduped.append(a)
-    hot = sorted(deduped, key=lambda x: x["push"], reverse=True)
 
-    print(f"掃描 {pages} 頁，找到 {len(hot)} 篇推文數 ≥ {MIN_PUSH} 的文章")
+    print(f"  掃描 {pages} 頁，{len(deduped)} 篇符合推文數，開始抓取內文…")
 
-    for a in hot:
+    # Step 2: 抓內文 + 解析時間 + 過濾
+    in_window = []
+    for a in deduped:
         try:
-            content, pushes = get_article_content(a["url"])
+            content, pushes, post_time = get_article_content(a["url"])
             a["content"] = content
             a["pushes"] = pushes[:TOP_PUSHES]
+            a["post_time"] = post_time
+            if post_time and post_time >= cutoff:
+                in_window.append(a)
             time.sleep(REQUEST_INTERVAL)
         except Exception as e:
             print(f"  抓取內文失敗 {a['url']}: {e}")
-            a["content"] = None
-            a["pushes"] = []
 
+    in_window.sort(key=lambda x: x["push"], reverse=True)
+    print(f"  過去 {LOOKBACK_HOURS} 小時內符合條件：{len(in_window)} 篇")
+
+    # Step 3: 寫入 markdown
     lines = [
         "# PTT 八卦版熱門文章",
         "",
-        f"> **更新時間**：{now}　|　**篩選**：推文數 ≥ {MIN_PUSH}　"
-        f"|　**掃描頁數**：{pages}　|　**找到**：{len(hot)} 篇",
+        f"> **更新時間**：{now_str}",
+        f">",
+        f"> **篩選條件**：發文時間 ≥ {cutoff_str}（過去 {LOOKBACK_HOURS} 小時）"
+        f"且 推文數 ≥ {MIN_PUSH}",
+        f">",
+        f"> **掃描頁數**：{pages}　|　**找到**：{len(in_window)} 篇",
         "",
-        "本檔案由 GitHub Actions 每 6 小時自動更新，永遠只保留最新一份。",
+        f"本檔案由 GitHub Actions 自動更新，永遠只保留最新一份。",
         "",
         "---",
         "",
     ]
 
-    if not hot:
+    if not in_window:
         lines.append("_目前沒有符合條件的文章_")
     else:
-        for i, a in enumerate(hot, 1):
+        for i, a in enumerate(in_window, 1):
             lines.append(f"## {i}. {a['title']}")
             lines.append("")
             lines.append(f"- **推文數**：{a['push_text']}")
             lines.append(f"- **作者**：{a['author']}")
-            lines.append(f"- **日期**：{a['date']}")
+            time_str = a["post_time"].strftime("%Y-%m-%d %H:%M") if a["post_time"] else a["date"]
+            lines.append(f"- **發文時間**：{time_str}")
             lines.append(f"- **連結**：{a['url']}")
             lines.append("")
             if a.get("content"):
