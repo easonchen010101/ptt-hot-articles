@@ -12,7 +12,7 @@ PTT_BASE = "https://www.ptt.cc"
 BOARD_URL = f"{PTT_BASE}/bbs/Gossiping/index.html"
 COOKIES = {"over18": "1"}
 
-MIN_PUSH = 20
+MIN_PUSH = 50
 LOOKBACK_HOURS = 24
 PAGES_TO_SCAN = 50
 CONTENT_MAX_CHARS = 2000
