@@ -5,19 +5,40 @@ import re
 import time
 from datetime import datetime, timedelta, timezone
 
-import requests
+from curl_cffi import requests
 from bs4 import BeautifulSoup
 
 PTT_BASE = "https://www.ptt.cc"
 BOARD_URL = f"{PTT_BASE}/bbs/Gossiping/index.html"
 COOKIES = {"over18": "1"}
-HEADERS = {"User-Agent": "Mozilla/5.0 (compatible; PTT-Hot-Scraper/1.0)"}
 
 MIN_PUSH = 20
 PAGES_TO_SCAN = 10
 CONTENT_MAX_CHARS = 2000
 TOP_PUSHES = 10
 REQUEST_INTERVAL = 0.4
+MAX_RETRIES = 3
+
+
+def fetch(url: str):
+    """偽裝成 Chrome 取得網頁，含重試。"""
+    last_err = None
+    for attempt in range(MAX_RETRIES):
+        try:
+            r = requests.get(
+                url,
+                cookies=COOKIES,
+                impersonate="chrome",
+                timeout=20,
+            )
+            r.raise_for_status()
+            return r
+        except Exception as e:
+            last_err = e
+            wait = 2 ** attempt
+            print(f"  抓取失敗（第 {attempt + 1}/{MAX_RETRIES} 次）：{e}，{wait}s 後重試")
+            time.sleep(wait)
+    raise last_err
 
 
 def parse_push_count(text: str) -> int:
@@ -39,8 +60,7 @@ def parse_push_count(text: str) -> int:
 
 
 def get_article_list(url: str):
-    r = requests.get(url, cookies=COOKIES, headers=HEADERS, timeout=15)
-    r.raise_for_status()
+    r = fetch(url)
     soup = BeautifulSoup(r.text, "html.parser")
 
     articles = []
@@ -71,8 +91,7 @@ def get_article_list(url: str):
 
 
 def get_article_content(url: str):
-    r = requests.get(url, cookies=COOKIES, headers=HEADERS, timeout=15)
-    r.raise_for_status()
+    r = fetch(url)
     soup = BeautifulSoup(r.text, "html.parser")
     main = soup.select_one("#main-content")
     if not main:
