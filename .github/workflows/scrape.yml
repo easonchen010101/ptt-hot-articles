@@ -2,8 +2,8 @@ name: Scrape PTT Hot Articles
 
 on:
   schedule:
-    # 每 6 小時跑一次（UTC 0/6/12/18 → 台灣時間 8/14/20/02）
-    - cron: '0 */6 * * *'
+    # 每 3 小時跑一次（UTC 0/3/6/9/12/15/18/21 → 台灣時間 8/11/14/17/20/23/02/05）
+    - cron: '0 */3 * * *'
   workflow_dispatch: {}
 
 permissions:
