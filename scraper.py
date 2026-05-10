@@ -5,6 +5,7 @@ import re
 import time
 from datetime import datetime, timedelta, timezone
 
+import markdown
 from curl_cffi import requests
 from bs4 import BeautifulSoup
 
@@ -234,9 +235,52 @@ def main():
             lines.append("---")
             lines.append("")
 
+    md_content = "\n".join(lines)
     with open("latest.md", "w", encoding="utf-8") as f:
-        f.write("\n".join(lines))
+        f.write(md_content)
     print("已寫入 latest.md")
+
+    write_html(md_content, now_str)
+    print("已寫入 index.html")
+
+
+def write_html(md_content: str, now_str: str) -> None:
+    body = markdown.markdown(md_content, extensions=["extra", "sane_lists"])
+    html = f"""<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PTT 八卦版熱門文章 ({now_str})</title>
+<meta name="description" content="PTT 八卦版過去 24 小時推文數 ≥ {MIN_PUSH} 的熱門文章，每 3 小時自動更新。">
+<style>
+  body {{
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI",
+                 "PingFang TC", "Microsoft JhengHei", sans-serif;
+    max-width: 820px; margin: 2em auto; padding: 0 1em;
+    line-height: 1.7; color: #24292f;
+  }}
+  h1 {{ border-bottom: 2px solid #d0d7de; padding-bottom: 0.3em; }}
+  h2 {{ border-bottom: 1px solid #d8dee4; padding-bottom: 0.3em; margin-top: 2.5em; }}
+  h3 {{ color: #57606a; margin-top: 1.5em; }}
+  blockquote {{
+    color: #57606a; border-left: 4px solid #d0d7de;
+    padding: 0.5em 1em; margin: 1em 0; background: #f6f8fa;
+  }}
+  hr {{ border: 0; border-top: 1px solid #d8dee4; margin: 3em 0; }}
+  ul {{ padding-left: 1.5em; }}
+  li {{ margin: 0.2em 0; }}
+  a {{ color: #0969da; word-break: break-all; }}
+  code, pre {{ background: #f6f8fa; padding: 0.2em 0.4em; border-radius: 3px; }}
+</style>
+</head>
+<body>
+{body}
+</body>
+</html>
+"""
+    with open("index.html", "w", encoding="utf-8") as f:
+        f.write(html)
 
 
 if __name__ == "__main__":
