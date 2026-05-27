@@ -21,17 +21,18 @@ jobs:
       - name: Install Claude Code
         run: npm install -g @anthropic-ai/claude-code
 
-      - name: Generate stories with Claude (Opus 4.7, 訂閱計費)
+      - name: Generate stories with Claude (Opus 4.7)
         env:
           CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
         run: |
-          PROMPT="$(cat .github/prompts/short-video-prompt.txt)"
-          MATERIAL="$(cat latest.md 2>/dev/null || echo '自由發揮')"
-          FULL="${PROMPT}
-
------ 以下為素材（PTT 八卦版熱門文，若內容異常或為空則自由發揮）-----
-${MATERIAL}"
-          echo "$FULL" | claude -p \
+          {
+            cat .github/prompts/short-video-prompt.txt
+            echo ""
+            echo "----- 以下為素材（PTT 八卦版熱門文，若內容異常或為空則自由發揮）-----"
+            cat latest.md 2>/dev/null || echo "自由發揮"
+          } > full_prompt.txt
+          echo "prompt bytes: $(wc -c < full_prompt.txt)"
+          cat full_prompt.txt | claude -p \
             --model claude-opus-4-7 \
             --allowedTools "" \
             --output-format text > stories.md
