@@ -1,0 +1,45 @@
+name: 短影音故事大綱（早晚）
+
+# 早 07:00 / 晚 19:00 (Asia/Taipei) = 23:00 / 11:00 UTC
+on:
+  schedule:
+    - cron: '0 11,23 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  generate-and-send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Generate stories with Claude (Opus 4.7, 訂閱計費)
+        env:
+          CLAUDE_CODE_OAUTH_TOKEN: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+        run: |
+          PROMPT="$(cat .github/prompts/short-video-prompt.txt)"
+          MATERIAL="$(cat latest.md 2>/dev/null || echo '自由發揮')"
+          FULL="${PROMPT}
+
+----- 以下為素材（PTT 八卦版熱門文，若內容異常或為空則自由發揮）-----
+${MATERIAL}"
+          echo "$FULL" | claude -p \
+            --model claude-opus-4-7 \
+            --allowedTools "" \
+            --output-format text > stories.md
+          echo "===== generated $(wc -c < stories.md) bytes ====="
+          head -c 500 stories.md
+
+      - name: Send to Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+        run: python3 .github/scripts/send_telegram.py stories.md
