@@ -44,4 +44,5 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TG_HEADER: "🟠 今日短影音故事大綱・Claude Opus 4.8（共 8 則）"
         run: python3 .github/scripts/send_telegram.py stories.md
