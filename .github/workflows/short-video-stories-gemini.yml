@@ -1,0 +1,26 @@
+name: 短影音故事大綱 Gemini（早晚）
+
+# 早 08:00 / 晚 20:00 (Asia/Taipei) = 00:00 / 12:00 UTC（與 Claude 那條 07:00/19:00 錯開 1 小時）
+on:
+  schedule:
+    - cron: '0 0,12 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  generate-and-send:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Generate stories with Gemini 3.5 Flash
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+        run: python3 .github/scripts/gen_gemini.py
+
+      - name: Send to Telegram
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          TG_HEADER: "🔵 今日短影音故事大綱・Gemini 3.5 Flash（共 8 則）"
+        run: python3 .github/scripts/send_telegram.py stories.md

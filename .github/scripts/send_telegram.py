@@ -12,7 +12,7 @@ import urllib.parse
 import urllib.request
 
 LIMIT = 3800  # Telegram 單則上限約 4096，留安全邊界
-HEADER = "🎬 今日短影音故事大綱（共 8 則）\n\n"
+HEADER = os.environ.get("TG_HEADER", "🎬 今日短影音故事大綱（共 8 則）")
 
 
 def chunk_text(text, limit):
@@ -57,7 +57,7 @@ def main():
 
     chunks = chunk_text(text, LIMIT)
     if chunks:
-        chunks[0] = HEADER + chunks[0]
+        chunks[0] = HEADER + "\n\n" + chunks[0]
 
     for i, c in enumerate(chunks):
         send(token, chat_id, c)
