@@ -3,7 +3,7 @@ name: 短影音故事大綱 Gemini（早晚）
 # 早 08:00 / 晚 20:00 (Asia/Taipei) = 00:00 / 12:00 UTC（與 Claude 那條 07:00/19:00 錯開 1 小時）
 on:
   schedule:
-    - cron: '0 0,12 * * *'
+    - cron: '25 0,12 * * *'
   workflow_dispatch: {}
 
 jobs:
