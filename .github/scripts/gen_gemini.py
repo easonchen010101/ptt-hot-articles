@@ -5,6 +5,7 @@
 """
 import json
 import os
+import urllib.error
 import urllib.request
 
 MODEL = "gemini-3.6-flash"
@@ -30,7 +31,7 @@ def build_prompt():
 def main():
     body = {
         "contents": [{"parts": [{"text": build_prompt()}]}],
-        "generation_config": {"thinking_level": THINKING_LEVEL},
+        "generationConfig": {"thinkingConfig": {"thinkingLevel": THINKING_LEVEL}},
     }
     url = (
         "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent"
@@ -44,8 +45,14 @@ def main():
             "x-goog-api-key": os.environ["GEMINI_API_KEY"],
         },
     )
-    with urllib.request.urlopen(req, timeout=300) as r:
-        d = json.loads(r.read().decode("utf-8"))
+    try:
+        with urllib.request.urlopen(req, timeout=300) as r:
+            d = json.loads(r.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        # 沒有這段的話 4xx 只會看到 "HTTP Error 400"，看不到真正原因
+        raise SystemExit(
+            "Gemini API HTTP %s: %s" % (e.code, e.read().decode("utf-8", "replace")[:1000])
+        )
 
     if "error" in d:
         raise SystemExit("Gemini API error: " + json.dumps(d["error"])[:500])
