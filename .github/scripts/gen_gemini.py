@@ -67,6 +67,8 @@ def main():
         f.write(text)
     um = d.get("usageMetadata", {})
     print("generated %d chars to %s; tokens: %s" % (len(text), OUT_FILE, um))
+    # 印出開頭，方便從 Actions log 直接檢查產出品質（Claude 那條也有做）
+    print("===== head =====\n" + text[:600])
 
 
 if __name__ == "__main__":
