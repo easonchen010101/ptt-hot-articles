@@ -8,6 +8,8 @@ import os
 import urllib.request
 
 MODEL = "gemini-3.6-flash"
+# 思考深度：minimal / low / medium / high（3.6 Flash 預設 medium）
+THINKING_LEVEL = "high"
 PROMPT_FILE = ".github/prompts/short-video-prompt.txt"
 MATERIAL_FILE = "latest.md"
 OUT_FILE = "stories.md"
@@ -26,7 +28,10 @@ def build_prompt():
 
 
 def main():
-    body = {"contents": [{"parts": [{"text": build_prompt()}]}]}
+    body = {
+        "contents": [{"parts": [{"text": build_prompt()}]}],
+        "generation_config": {"thinking_level": THINKING_LEVEL},
+    }
     url = (
         "https://generativelanguage.googleapis.com/v1beta/models/%s:generateContent"
         % MODEL
