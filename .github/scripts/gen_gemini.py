@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""呼叫 Gemini 3.5 Flash，依提示詞 + latest.md 素材產出短影音故事，寫到 stories.md。
+"""呼叫 Gemini 3.6 Flash，依提示詞 + latest.md 素材產出短影音故事，寫到 stories.md。
 
 環境變數：GEMINI_API_KEY
 """
@@ -7,7 +7,7 @@ import json
 import os
 import urllib.request
 
-MODEL = "gemini-3.5-flash"
+MODEL = "gemini-3.6-flash"
 PROMPT_FILE = ".github/prompts/short-video-prompt.txt"
 MATERIAL_FILE = "latest.md"
 OUT_FILE = "stories.md"

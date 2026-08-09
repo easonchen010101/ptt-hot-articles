@@ -13,7 +13,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Generate stories with Gemini 3.5 Flash
+      - name: Generate stories with Gemini 3.6 Flash
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python3 .github/scripts/gen_gemini.py
@@ -22,5 +22,5 @@ jobs:
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
-          TG_HEADER: "🔵 今日短影音故事大綱・Gemini 3.5 Flash（共 8 則）"
+          TG_HEADER: "🔵 今日短影音故事大綱・Gemini 3.6 Flash（共 8 則）"
         run: python3 .github/scripts/send_telegram.py stories.md
