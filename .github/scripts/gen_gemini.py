@@ -5,6 +5,7 @@
 """
 import json
 import os
+import time
 import urllib.error
 import urllib.request
 
@@ -14,6 +15,9 @@ THINKING_LEVEL = "high"
 PROMPT_FILE = ".github/prompts/short-video-prompt.txt"
 MATERIAL_FILE = "latest.md"
 OUT_FILE = "stories.md"
+# Google 側過載（503）/ 限流（429）會整條掛掉害該時段漏送，所以退避重試
+RETRY_STATUS = (429, 500, 502, 503, 504)
+RETRY_WAITS = (20, 60, 120, 240)
 
 
 def build_prompt():
@@ -45,14 +49,25 @@ def main():
             "x-goog-api-key": os.environ["GEMINI_API_KEY"],
         },
     )
-    try:
-        with urllib.request.urlopen(req, timeout=300) as r:
-            d = json.loads(r.read().decode("utf-8"))
-    except urllib.error.HTTPError as e:
-        # 沒有這段的話 4xx 只會看到 "HTTP Error 400"，看不到真正原因
-        raise SystemExit(
-            "Gemini API HTTP %s: %s" % (e.code, e.read().decode("utf-8", "replace")[:1000])
-        )
+    d = None
+    for attempt, wait in enumerate(RETRY_WAITS + (None,), 1):
+        try:
+            with urllib.request.urlopen(req, timeout=300) as r:
+                d = json.loads(r.read().decode("utf-8"))
+            break
+        except urllib.error.HTTPError as e:
+            # 沒有這段的話 4xx 只會看到 "HTTP Error 400"，看不到真正原因
+            detail = e.read().decode("utf-8", "replace")[:1000]
+            if e.code in RETRY_STATUS and wait is not None:
+                print("第 %d 次失敗 HTTP %s，%d 秒後重試：%s" % (attempt, e.code, wait, detail[:200]))
+                time.sleep(wait)
+                continue
+            raise SystemExit("Gemini API HTTP %s: %s" % (e.code, detail))
+        except (urllib.error.URLError, TimeoutError) as e:
+            if wait is None:
+                raise SystemExit("Gemini API 連線失敗：%s" % e)
+            print("第 %d 次連線失敗（%s），%d 秒後重試" % (attempt, e, wait))
+            time.sleep(wait)
 
     if "error" in d:
         raise SystemExit("Gemini API error: " + json.dumps(d["error"])[:500])
