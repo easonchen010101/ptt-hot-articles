@@ -3,6 +3,7 @@
 
 環境變數：GEMINI_API_KEY
 """
+import http.client
 import json
 import os
 import time
@@ -63,10 +64,12 @@ def main():
                 time.sleep(wait)
                 continue
             raise SystemExit("Gemini API HTTP %s: %s" % (e.code, detail))
-        except (urllib.error.URLError, TimeoutError) as e:
+        # OSError 涵蓋 URLError/TimeoutError/連線被重設；HTTPException 涵蓋
+        # RemoteDisconnected（Google 直接斷線，urllib 不會包成 URLError）
+        except (OSError, http.client.HTTPException) as e:
             if wait is None:
-                raise SystemExit("Gemini API 連線失敗：%s" % e)
-            print("第 %d 次連線失敗（%s），%d 秒後重試" % (attempt, e, wait))
+                raise SystemExit("Gemini API 連線失敗：%r" % e)
+            print("第 %d 次連線失敗（%r），%d 秒後重試" % (attempt, e, wait))
             time.sleep(wait)
 
     if "error" in d:
