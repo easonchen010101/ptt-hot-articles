@@ -109,7 +109,9 @@ def main():
     with open(OUT_FILE, "w", encoding="utf-8") as f:
         f.write(text)
     um = d.get("usageMetadata", {})
-    print("model=%s; generated %d chars to %s; tokens: %s" % (model, len(text), OUT_FILE, um))
+    # 順便報則數：提示詞要 8 則，少了要能從 log 一眼看出來
+    print("model=%s; %d 則、%d chars to %s; tokens: %s"
+          % (model, text.count("【標題】"), len(text), OUT_FILE, um))
     # 讓 Telegram 標頭顯示「實際」用到的模型，退到備援時不會標錯
     env_file = os.environ.get("GITHUB_ENV")
     if env_file:
