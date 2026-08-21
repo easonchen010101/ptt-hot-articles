@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""呼叫 Gemini 3.6 Flash，依提示詞 + latest.md 素材產出短影音故事，寫到 stories.md。
+"""呼叫 Gemini 3.7 Flash，依提示詞 + latest.md 素材產出短影音故事，寫到 stories.md。
 
 環境變數：GEMINI_API_KEY
 """
@@ -8,8 +8,8 @@ import os
 import urllib.error
 import urllib.request
 
-MODEL = "gemini-3.6-flash"
-# 思考深度：minimal / low / medium / high（3.6 Flash 預設 medium）
+MODEL = "gemini-3.7-flash"
+# 思考深度：low / medium / high（3.7 Flash 預設 medium）
 THINKING_LEVEL = "high"
 PROMPT_FILE = ".github/prompts/short-video-prompt.txt"
 MATERIAL_FILE = "latest.md"
