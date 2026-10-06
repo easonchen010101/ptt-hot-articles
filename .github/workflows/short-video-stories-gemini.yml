@@ -9,11 +9,13 @@ on:
 jobs:
   generate-and-send:
     runs-on: ubuntu-latest
+    # Google 塞車時腳本最多會等約 40 分鐘；這只是防卡死的上限
+    timeout-minutes: 100
     steps:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Generate stories with Gemini (3.7 Flash，塞車自動退 3.6)
+      - name: Generate stories with Gemini (3.7/3.6 Flash 輪流試，塞車最多等約 40 分)
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
         run: python3 .github/scripts/gen_gemini.py
