@@ -32,11 +32,12 @@ jobs:
             cat latest.md 2>/dev/null || echo "自由發揮"
           } > full_prompt.txt
           echo "prompt bytes: $(wc -c < full_prompt.txt)"
+          set -o pipefail
           cat full_prompt.txt | claude -p \
             --model claude-opus-5-5 \
             --effort max \
             --allowedTools "" \
-            --output-format text > stories.md
+            --output-format text | tee stories.md
           echo "===== generated $(wc -c < stories.md) bytes ====="
           head -c 500 stories.md
 
