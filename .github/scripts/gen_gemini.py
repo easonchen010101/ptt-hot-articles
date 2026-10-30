@@ -12,7 +12,7 @@ import urllib.error
 import urllib.request
 
 # 每一輪依序嘗試：排前面的優先，塞車就換下一個
-MODELS = ("gemini-3.7-flash", "gemini-3.6-flash")
+MODELS = ("gemini-3.8-flash", "gemini-3.6-flash")
 # 思考深度：low / medium / high（3.x Flash 預設 medium）
 THINKING_LEVEL = "high"
 PROMPT_FILE = ".github/prompts/short-video-prompt.txt"
@@ -43,7 +43,7 @@ def build_prompt():
 
 
 def label(model):
-    """gemini-3.7-flash -> Gemini 3.7 Flash（給 Telegram 標頭用）"""
+    """gemini-3.8-flash -> Gemini 3.8 Flash（給 Telegram 標頭用）"""
     return " ".join(w.capitalize() if w.isalpha() else w for w in model.split("-"))
 
 
