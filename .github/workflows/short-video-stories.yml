@@ -13,13 +13,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v6
 
-      - name: Setup Node
-        uses: actions/setup-node@v6
-        with:
-          node-version: '20'
-
       - name: Install Claude Code
-        run: npm install -g @anthropic-ai/claude-code
+        run: |
+          curl -fsSL https://claude.ai/install.sh -o /tmp/install-claude.sh
+          bash /tmp/install-claude.sh latest
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+          "$HOME/.local/bin/claude" --version
 
       - name: Generate stories with Claude (Opus 5.5)
         env:
