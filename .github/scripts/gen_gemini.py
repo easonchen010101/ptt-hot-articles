@@ -71,7 +71,7 @@ def call(model, prompt):
         },
     )
     try:
-        with urllib.request.urlopen(req, timeout=180) as r:
+        with urllib.request.urlopen(req, timeout=360) as r:
             return json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         # 沒有這段的話 4xx 只會看到 "HTTP Error 400"，看不到真正原因
