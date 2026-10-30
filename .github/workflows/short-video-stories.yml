@@ -9,6 +9,7 @@ on:
 jobs:
   generate-and-send:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -34,7 +35,7 @@ jobs:
           set -o pipefail
           cat full_prompt.txt | claude -p \
             --model claude-opus-5-5 \
-            --effort max \
+            --effort high \
             --allowedTools "" \
             --output-format text | tee stories.md
           echo "===== generated $(wc -c < stories.md) bytes ====="

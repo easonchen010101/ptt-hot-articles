@@ -34,7 +34,7 @@ Gemini 使用 `gemini-3.8-flash`、`thinkingLevel=high`；暫時性錯誤時改�
 1. **觸發** — cron `0 11,23 * * *`（UTC）= 台北早 07:00 / 晚 19:00；也可在 repo 的 **Actions → Run workflow** 手動觸發。
 2. **抓素材** — 直接讀 repo 內的 `latest.md`（每 3 小時更新的 PTT 熱門文）。讀不到或異常時，提示詞會讓 Claude 改為「自由發揮」。
 3. **生成** — runner 安裝 Claude Code CLI，執行
-   `claude -p --model claude-opus-5-5 --effort max --allowedTools "" --output-format text`，
+   `claude -p --model claude-opus-5-5 --effort high --allowedTools "" --output-format text`，
    認證靠 secret `CLAUDE_CODE_OAUTH_TOKEN`（`claude setup-token` 產生、走訂閱）。
 4. **送 Telegram** — `send_telegram.py` 純文字分段（按行拆分，每段最多 3800 字，另加標頭；可能跨段拆開故事），靠 `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID` 直接打 Bot API。
 
